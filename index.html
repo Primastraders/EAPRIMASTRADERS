@@ -205,13 +205,26 @@
         }
       }
 
-      // 3. Upsert na tabela licencas
+      // 3. Busca licenca existente para preservar conta2 se não preenchida
       const agora = new Date().toISOString();
-      await supaFetch('/rest/v1/licencas', {
-        method: 'POST',
-        headers: { 'Prefer': 'resolution=merge-duplicates,return=representation' },
-        body: JSON.stringify({ cpf: cpfLimpo, nome, email, conta1, conta2: conta2||null, data1: agora, data2: conta2?agora:null })
-      });
+      const licAtual = await supaFetch('/rest/v1/licencas?cpf=eq.'+cpfLimpo+'&select=conta2');
+      const conta2Atual = (licAtual && licAtual.length > 0) ? licAtual[0].conta2 : null;
+      const conta2Final = conta2 || conta2Atual || null;
+
+      // Tenta atualizar primeiro, se não existir insere
+      const existe = licAtual && licAtual.length > 0;
+      if(existe){
+        await supaFetch('/rest/v1/licencas?cpf=eq.'+cpfLimpo, {
+          method: 'PATCH',
+          body: JSON.stringify({ nome, email, conta1, conta2: conta2Final, data1: agora, data2: conta2Final?agora:null })
+        });
+      } else {
+        await supaFetch('/rest/v1/licencas', {
+          method: 'POST',
+          headers: { 'Prefer': 'resolution=merge-duplicates,return=representation' },
+          body: JSON.stringify({ cpf: cpfLimpo, nome, email, conta1, conta2: conta2Final, data1: agora, data2: conta2Final?agora:null })
+        });
+      }
 
       toast('✔ Licença ativada com sucesso!<br>Reinicie o EA no MetaTrader.','ok');
       ['nome','cpf','email','conta1','conta2'].forEach(id=>document.getElementById(id).value='');
