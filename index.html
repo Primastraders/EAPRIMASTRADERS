@@ -503,9 +503,8 @@ function prepararLogoGeral(){
 
 async function fazerLoginDashboard(ev){
   if(ev) ev.preventDefault();
-  const email=document.getElementById('loginEmail').value.trim().toLowerCase() || 'dashboard@primas.local';
-  usuarioLogado={nome:'Dashboard',email};
-  sessionStorage.setItem('primasUser',JSON.stringify({nome:'Dashboard',email}));
+  usuarioLogado={nome:'Dashboard',email:'dashboard@primas.local'};
+  sessionStorage.setItem('primasUser',JSON.stringify(usuarioLogado));
   mostrarAppDashboard();
 }
 
