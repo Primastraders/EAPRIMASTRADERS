@@ -197,16 +197,16 @@ footer{position:relative;z-index:10;text-align:center;padding:16px;font-size:10p
     <img class="login-logo" id="loginLogo" alt="Primas Traders"/>
     <div class="login-title">Primas Traders</div>
     <div class="login-sub">Backtest</div>
-    <div class="login-field">
+    <div class="login-field" style="display:none;">
       <label for="loginEmail">E-mail</label>
       <input id="loginEmail" type="email" autocomplete="username"/>
     </div>
     <div class="login-field">
-      <label for="loginSenha">Senha</label>
-      <input id="loginSenha" type="password" autocomplete="current-password"/>
+      <label for="loginSenha">Senha de acesso</label>
+      <input id="loginSenha" type="password" autocomplete="off"/>
     </div>
     <button class="login-btn" id="loginBtn" type="submit">Entrar</button>
-   <div class="login-err" id="loginErr"></div>
+    <div class="login-err" id="loginErr"></div>
   </form>
 </div>
 
@@ -456,7 +456,8 @@ footer{position:relative;z-index:10;text-align:center;padding:16px;font-size:10p
 
 <script>
 const SUPA_URL  = 'https://adjpkedenvijkjcpjiuv.supabase.co';
-const SUPA_PUBLIC_KEY = sb_publishable_YGko2q97xLCt57ZQ9SlflA_qFGXBzoI;
+const SUPA_PUBLIC_KEY = 'sb_publishable_YGko2q97xLCt57ZQ9SlflA_qFGXBzoI';
+const DASHBOARD_ACCESS_HASH = 'fc7b1f874641628319d4c0b1b9bf3bda0b8e39c3e42de6059be6248a8ec7da53';
 const HORAS = ['0H','1H','2H','3H','4H','5H','6H','7H','8H','9H','10H','11H','12H','13H','14H','15H','16H','17H','18H','19H','20H','21H','22H','23H'];
 const HORAS_DASH = ['0H','1H','2H','3H','4H','5H','6H','7H','8H','9H','10H','11H','12H','13H','14H','15H','16H','17H','18H','19H','20H','21H','22H','23H'];
 const MESES = ['','Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
@@ -503,9 +504,36 @@ function prepararLogoGeral(){
 
 async function fazerLoginDashboard(ev){
   if(ev) ev.preventDefault();
-  usuarioLogado={nome:'Dashboard',email:'dashboard@primas.local'};
-  sessionStorage.setItem('primasUser',JSON.stringify(usuarioLogado));
-  mostrarAppDashboard();
+  const senha=document.getElementById('loginSenha').value;
+  const err=document.getElementById('loginErr');
+  const btn=document.getElementById('loginBtn');
+  if(!senha){
+    err.textContent='Informe a senha de acesso.';
+    err.style.display='block';
+    return;
+  }
+  btn.disabled=true;
+  btn.textContent='Entrando...';
+  err.style.display='none';
+  try{
+    const bytes=new TextEncoder().encode(senha);
+    const hashBuffer=await crypto.subtle.digest('SHA-256',bytes);
+    const hash=[...new Uint8Array(hashBuffer)].map(b=>b.toString(16).padStart(2,'0')).join('');
+    if(hash!==DASHBOARD_ACCESS_HASH){
+      err.textContent='Senha de acesso invalida.';
+      err.style.display='block';
+      return;
+    }
+    usuarioLogado={nome:'Dashboard',email:'dashboard@primas.local'};
+    sessionStorage.setItem('primasUser',JSON.stringify(usuarioLogado));
+    mostrarAppDashboard();
+  }catch(e){
+    err.textContent='Nao foi possivel validar o acesso.';
+    err.style.display='block';
+  }finally{
+    btn.disabled=false;
+    btn.textContent='Entrar';
+  }
 }
 
 function mostrarAppDashboard(){
